@@ -60,8 +60,8 @@ class ssobj:
         for item in system._listofobjs:
             if item != self and not self._nextlopsource.count(item._name):
                 #Find rage and normalized directional vector from self to item
-                FoR = tuple(map(lambda x, y: x - y, item._lop._x, self._lop._x))
-                Dist = math.hypot(FoR[0],FoR[1])
+                FoR     = tuple(map(lambda x, y: x - y, item._lop._x, self._lop._x))
+                Dist    = math.hypot(FoR[0],FoR[1])
                 FoRNorm = tuple(map(lambda x: x / Dist, FoR))
 
                 #If items do not collide - calculate force of gravity
@@ -71,19 +71,20 @@ class ssobj:
                     FTot = tuple(map(lambda x, y: FoG * x + y, FoRNorm, FTot))
 
                     item._nextlopsource.append(self._name)
-                    item._nextlop._ddx = tuple(map(lambda x, y: -FoG * x / item._mass + y, FoRNorm, item._nextlop._ddx))
+                    item._nextlop._ddx = tuple(map(lambda x, y: 
+                        -FoG * x / item._mass + y, FoRNorm, item._nextlop._ddx))
 
                 #If items do collide - update direction of first with force of
                 #  impact, mass, etc. and remove second from system.
                 else:
-                    #print(Dist)
-                    #Update 'static' properties
-                    self._mass += item._mass
-                    self._density = (self._density + item._density) / 2
-                    self._radius = ( (self._density / self._mass) * ((4/3) * math.pi) ) ** (-1/3)
-
                     #Calculate additional force from impact of item
-                    FTot += tuple(map(lambda x: item._mass * x, item._lop._ddx))
+                    self._lop._dx = tuple(map(lambda x, y: 
+                        (item._mass * x + self._mass * y) / (item._mass + self._mass), item._lop._dx, self._lop._dx))
+                        
+                    #Update 'static' properties
+                    self._mass   += item._mass
+                    self._density = (self._density + item._density) / 2
+                    self._radius  = ( (self._density / self._mass) * ((4/3) * math.pi) ) ** (-1/3)
 
                     #Remove second obj.
                     system._listofobjs.remove(item)
@@ -103,45 +104,39 @@ class ssobj:
         self._lop._dx = tuple(map(lambda y,z: 
             y + z * dt, self._lop._dx, self._lop._ddx))
 
-    def collision(self,other):
-        self._mergelist.append(other)
-
 ## Visual output
 def RunGraphics():
-    pygame.init()
-    win=pygame.display.set_mode((1200,900))
-    keysPressed = defaultdict(bool)
-
-    #Detect user inputs
-    def ScanKeyboard():
-        while True:
-            event = pygame.event.poll()
-            if event.type == pygame.NOEVENT:
-                break
-            elif event.type in [pygame.KEYDOWN, pygame.KEYUP]:
-                keysPressed[event.key] = event.type == pygame.KEYDOWN
-
     #Make Solar System            
     sol = solarsystem()
     for x in range(0,100): #Make n objects.
         p = ssobj(name = x, dx = (0, 0), ddx = (0, 0))
         sol._listofobjs.append(p)
 
+    keysPressed = defaultdict(bool)
     bClearScreen = True
+    
+    pygame.init()
+    win=pygame.display.set_mode((1200,900))
     pygame.display.set_caption('Plasma Simulation - Press ESC to Exit')
+    
+    #Detect user inputs
+    def ScanKeyboard():
+        event = pygame.event.poll()
+        if event.type in [pygame.KEYDOWN, pygame.KEYUP]:
+            keysPressed[event.key] = event.type == pygame.KEYDOWN
 
     while True:
         pygame.display.flip()
         if bClearScreen:
             win.fill((0,0,0))
-        win.lock()
+        #win.lock()
         for item in sol._listofobjs:
             pygame.draw.circle(win,
                                (255,255,255),
                                (int(round(600 + 100 * item._lop._x[0])),int(round(450 + 100 * item._lop._x[1]))),
                                int(round(2 * item._radius)),
                                0)
-        win.unlock()
+        #win.unlock()
         ScanKeyboard()
         
         for item in sol._listofobjs:
