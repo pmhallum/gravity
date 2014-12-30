@@ -9,7 +9,8 @@ import random
 #Set gravitational constant
 ConstG = 1
 #Set temporal step constant
-dt = .0001
+dt = .01
+dist = 100
 
 #Solar System Properties
 class solarsystem:
@@ -27,19 +28,21 @@ class objlop:
 class ssobj:
     global ConstG
     global dt
+    global dist
+    
     #Initialize solar system object location, velocity and acceleration
     #  as well as other properties (density, radius, etc.)
     def __init__(self, name,
                  x      = (None, None),
                  dx     = (None, None),
                  ddx    = (None, None),
-                 radius = .01,
+                 radius = .5,
                  mass   = 1000):
 
         lop = [x,dx,ddx]
         for idx,x in enumerate(lop):
             if x == (None, None):
-                lop[idx] = (random.uniform(-1,1),random.uniform(-1,1))
+                lop[idx] = (dist * random.uniform(-1,1), dist * random.uniform(-1,1))
 
         self._name      = name
         self._lop       = objlop(lop[0],lop[1],lop[2])
@@ -61,6 +64,7 @@ class ssobj:
             if item != self and not self._nextlopsource.count(item._name):
                 #Find rage and normalized directional vector from self to item
                 FoR     = tuple(map(lambda x, y: x - y, item._lop._x, self._lop._x))
+               # print(FoR)
                 Dist    = math.hypot(FoR[0],FoR[1])
                 FoRNorm = tuple(map(lambda x: x / Dist, FoR))
 
@@ -106,8 +110,10 @@ class ssobj:
 
 ## Visual output
 def RunGraphics():
-    #Make Solar System            
+    #Make Solar System           
     sol = solarsystem()
+    #big = ssobj(name = -1, x = (0,0), dx = (0, 0), ddx = (0, 0), radius = .1, mass = 10000)
+    #sol._listofobjs.append(big)
     for x in range(0,100): #Make n objects.
         p = ssobj(name = x, dx = (0, 0), ddx = (0, 0))
         sol._listofobjs.append(p)
@@ -131,11 +137,18 @@ def RunGraphics():
             win.fill((0,0,0))
         #win.lock()
         for item in sol._listofobjs:
-            pygame.draw.circle(win,
-                               (255,255,255),
-                               (int(round(600 + 100 * item._lop._x[0])),int(round(450 + 100 * item._lop._x[1]))),
-                               int(round(2 * item._radius)),
-                               0)
+            #if item._name == -1:
+            #    pygame.draw.circle(win,
+            #                   (255,0,0),
+            #                   (int(round(600 + 100 * item._lop._x[0])),int(round(450 + 100 * item._lop._x[1]))),
+            #                   int(round(2 * item._radius)),
+            #                   0)
+            #else:
+                pygame.draw.circle(win,
+                                   (255,255,255),
+                                   (int(round(600 + item._lop._x[0])),int(round(450 + item._lop._x[1]))),
+                                   int(round(item._radius)),
+                                   0)
         #win.unlock()
         ScanKeyboard()
         
