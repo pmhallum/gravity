@@ -9,8 +9,10 @@ import random
 #Set gravitational constant
 ConstG = 1
 #Set temporal step constant
-dt = .05
-dist = 200
+dt = .001
+dist = 100
+
+class BreakOut(Exception): pass
 
 #Solar System Properties
 class solarsystem:
@@ -36,7 +38,7 @@ class ssobj:
                  x      = (None, None),
                  dx     = (None, None),
                  ddx    = (None, None),
-                 radius = 1,
+                 radius = .5,
                  mass   = 1000):
 
         lop = [x,dx,ddx]
@@ -57,14 +59,13 @@ class ssobj:
 
     #Calculate neighborhood affects of G and update acceleration
     def updateit(self,system):
+        
+        #Calculate interactions between objects
         FTot = (0,0)
-        #Each calculation is performed twice - this could be improved by saving
-        # calculated forces in both objects when it is calculated for the first.
         for item in system._listofobjs:
             if item != self and not self._nextlopsource.count(item._name):
                 #Find rage and normalized directional vector from self to item
                 FoR     = tuple(map(lambda x, y: x - y, item._lop._x, self._lop._x))
-               # print(FoR)
                 Dist    = math.hypot(FoR[0],FoR[1])
                 FoRNorm = tuple(map(lambda x: x / Dist, FoR))
 
@@ -92,21 +93,18 @@ class ssobj:
 
                     #Remove second obj.
                     system._listofobjs.remove(item)
-            else:
-                pass
+                    
         #Move object and update acceleration
-        self.moveit()
-        self._lop._ddx = tuple(map(lambda x, y:
-            x + y / self._mass, item._nextlop._ddx, FTot))
+        self.moveit(FTot)
         item._nextlopsource = []
         item._nextlop._ddx = (0,0)
 
     #Move the object within the solar system
-    def moveit(self):
-        self._lop._x  = tuple(map(lambda x,y,z: 
-            x + y * dt + (z * dt**2) / 2, self._lop._x, self._lop._dx, self._lop._ddx))
-        self._lop._dx = tuple(map(lambda y,z: 
-            y + z * dt, self._lop._dx, self._lop._ddx))
+    def moveit(self, FTot):
+        self._lop._ddx = tuple(map(lambda x, y:    x + y, self._nextlop._ddx, FTot))
+        self._lop._dx  = tuple(map(lambda y, z:    y + z * dt, self._lop._dx, self._lop._ddx))
+        self._lop._x   = tuple(map(lambda x, y, z: x + y * dt + (z * dt**2) / 2, self._lop._x, self._lop._dx, self._lop._ddx))
+        
     
     def displayit(self,disp):
         pygame.draw.circle(disp,
@@ -117,52 +115,45 @@ class ssobj:
 
 ## Visual output
 def RunGraphics():
+    
     #Make Solar System           
     sol = solarsystem()
-    #big = ssobj(name = -1, x = (0,0), dx = (0, 0), ddx = (0, 0), radius = .1, mass = 10000)
-    #sol._listofobjs.append(big)
     for x in range(0,100): #Make n objects.
         p = ssobj(name = x, dx = (0, 0), ddx = (0, 0))
         sol._listofobjs.append(p)
 
+    #Initialize Keyboard Inputs
     keysPressed = defaultdict(bool)
     bClearScreen = True
     
+    #Initialize pygame Window
     pygame.init()
     win = pygame.display.set_mode((1200,900))
     pygame.display.set_caption('Plasma Simulation - Press ESC to Exit')
     
-    ##Detect user inputs
-    #def ScanKeyboard():
-        
-    while True:
-        pygame.display.flip()
-        if bClearScreen:
-            win.fill((0,0,0))
-        #win.lock()
-        for item in sol._listofobjs:
-            #if item._name == -1:
-            #    pygame.draw.circle(win,
-            #                   (255,0,0),
-            #                   (int(round(600 + 100 * item._lop._x[0])),int(round(450 + 100 * item._lop._x[1]))),
-            #                   int(round(2 * item._radius)),
-            #                   0)
-            #else:
-            item.displayit(win)
-            item.updateit(sol)
+    #Run game and detect user inputs
+    try:
+        while True:
+            pygame.display.flip()
+            
+            if bClearScreen:
+                win.fill((0,0,0))
+                
+            for item in sol._listofobjs:
+                item.displayit(win)
+                item.updateit(sol)
             
         
-        for event in pygame.event.get():
-            if event.type in [pygame.KEYDOWN, pygame.KEYUP]:
-                keysPressed[event.key] = event.type == pygame.KEYDOWN
-            if keysPressed[pygame.K_ESCAPE] or event.type == pygame.QUIT:
-                pygame.quit()
-                break
-            if keysPressed[pygame.K_SPACE]:
-                #while keysPressed[pygame.K_SPACE]:
-                    #ScanKeyboard()
-                    bClearScreen = not bClearScreen
-
+            for event in pygame.event.get():
+                if event.type in [pygame.KEYDOWN, pygame.KEYUP]:
+                    keysPressed[event.key] = event.type == pygame.KEYDOWN
+                    if keysPressed[pygame.K_ESCAPE] or event.type == pygame.QUIT:
+                        raise BreakOut
+                    if keysPressed[pygame.K_SPACE]:
+                        bClearScreen = not bClearScreen
+    except BreakOut:                
+        pygame.quit()
+        
 if __name__ == "__main__":
     RunGraphics()
 
