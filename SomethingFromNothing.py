@@ -9,8 +9,8 @@ import random
 #Set gravitational constant
 ConstG = 1
 #Set temporal step constant
-dt = .01
-dist = 100
+dt = .05
+dist = 200
 
 #Solar System Properties
 class solarsystem:
@@ -36,7 +36,7 @@ class ssobj:
                  x      = (None, None),
                  dx     = (None, None),
                  ddx    = (None, None),
-                 radius = .5,
+                 radius = 1,
                  mass   = 1000):
 
         lop = [x,dx,ddx]
@@ -107,6 +107,13 @@ class ssobj:
             x + y * dt + (z * dt**2) / 2, self._lop._x, self._lop._dx, self._lop._ddx))
         self._lop._dx = tuple(map(lambda y,z: 
             y + z * dt, self._lop._dx, self._lop._ddx))
+    
+    def displayit(self,disp):
+        pygame.draw.circle(disp,
+                           (255,255,255), 
+                           (int(round(600 + self._lop._x[0])),int(round(450 + self._lop._x[1]))),
+                           int(round(self._radius)),
+                           0)
 
 ## Visual output
 def RunGraphics():
@@ -122,15 +129,12 @@ def RunGraphics():
     bClearScreen = True
     
     pygame.init()
-    win=pygame.display.set_mode((1200,900))
+    win = pygame.display.set_mode((1200,900))
     pygame.display.set_caption('Plasma Simulation - Press ESC to Exit')
     
-    #Detect user inputs
-    def ScanKeyboard():
-        event = pygame.event.poll()
-        if event.type in [pygame.KEYDOWN, pygame.KEYUP]:
-            keysPressed[event.key] = event.type == pygame.KEYDOWN
-
+    ##Detect user inputs
+    #def ScanKeyboard():
+        
     while True:
         pygame.display.flip()
         if bClearScreen:
@@ -144,25 +148,20 @@ def RunGraphics():
             #                   int(round(2 * item._radius)),
             #                   0)
             #else:
-                pygame.draw.circle(win,
-                                   (255,255,255),
-                                   (int(round(600 + item._lop._x[0])),int(round(450 + item._lop._x[1]))),
-                                   int(round(item._radius)),
-                                   0)
-        #win.unlock()
-        ScanKeyboard()
-        
-        for item in sol._listofobjs:
+            item.displayit(win)
             item.updateit(sol)
-
-        if keysPressed[pygame.K_ESCAPE]:
-            pygame.quit()
-            break
+            
         
-        if keysPressed[pygame.K_SPACE]:
-            while keysPressed[pygame.K_SPACE]:
-                ScanKeyboard()
-            bClearScreen = not bClearScreen
+        for event in pygame.event.get():
+            if event.type in [pygame.KEYDOWN, pygame.KEYUP]:
+                keysPressed[event.key] = event.type == pygame.KEYDOWN
+            if keysPressed[pygame.K_ESCAPE] or event.type == pygame.QUIT:
+                pygame.quit()
+                break
+            if keysPressed[pygame.K_SPACE]:
+                #while keysPressed[pygame.K_SPACE]:
+                    #ScanKeyboard()
+                    bClearScreen = not bClearScreen
 
 if __name__ == "__main__":
     RunGraphics()
