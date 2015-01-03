@@ -11,7 +11,7 @@ import random
 ConstG = 1
 #Set temporal step constant
 dt = .01
-dist = 100
+dist = 200
 
 class BreakOut(Exception): pass
 
@@ -43,9 +43,12 @@ class ssobj:
                  mass   = 10):
 
         lop = [x,dx,ddx]
-        for idx,x in enumerate(lop):
+        for idx, x in enumerate(lop):
             if x == (None, None):
-                lop[idx] = (dist * random.uniform(-1,1), dist * random.uniform(-1,1))
+                phi = random.uniform(0, 2 * math.pi)
+                r   = dist * random.uniform(0,1)
+                
+                lop[idx] = (r * math.cos(phi), r * math.sin(phi))
 
         self._name      = name
         self._lop       = objlop(lop[0],lop[1],lop[2])
@@ -131,9 +134,10 @@ def RunGraphics():
     
     #Make Solar System           
     sol = solarsystem()
-    for x in range(0,500): #Make n objects.
-        p = ssobj(name = x, dx = (0, 0), ddx = (0, 0))
-        sol._listofobjs.append(p)
+    with concurrent.futures.ThreadPoolExecutor(max_workers = 8) as executor:
+        for x in range(0,250): #Make n objects.
+            futureObj = executor.submit(ssobj,name = x, dx = (0, 0), ddx = (0, 0))
+            sol._listofobjs.append(futureObj.result())
 
     #Initialize Keyboard Inputs
     keysPressed = defaultdict(bool)
@@ -155,11 +159,13 @@ def RunGraphics():
             mergedObjs = []
             for item in sol._listofobjs: 
                 item.displayit(win)
-            with concurrent.futures.ThreadPoolExecutor(max_workers = 4) as executor:
+                
+            with concurrent.futures.ThreadPoolExecutor(max_workers = 8) as executor:
                 for item in sol._listofobjs: 
                     futureNH = executor.submit(item.neighborhood, sol)
                     futureNH.result()
                     
+            with concurrent.futures.ThreadPoolExecutor(max_workers = 8) as executor:
                 for item in sol._listofobjs: 
                     futureMv = executor.submit(item.updateit, sol)
                     if not mergedObjs.count(item):
