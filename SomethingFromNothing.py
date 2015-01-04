@@ -10,7 +10,7 @@ import random
 #Set gravitational constant
 ConstG = 1
 #Set temporal step constant
-dt = .01
+dt = .1
 dist = 200
 
 class BreakOut(Exception): pass
@@ -116,7 +116,7 @@ class ssobj:
         
     #Move the object within the solar system
     def moveit(self, FTot):
-        self._lop._ddx = FTot
+        self._lop._ddx = tuple(map(lambda x: x / self._mass, FTot))
         #self._lop._ddx = tuple(map(lambda x, y:    x + y, self._nextlop._ddx, FTot))
         self._lop._dx  = tuple(map(lambda y, z:    y + z * dt, self._lop._dx, self._lop._ddx))
         self._lop._x   = tuple(map(lambda x, y, z: x + y * dt + (z * dt**2) / 2, self._lop._x, self._lop._dx, self._lop._ddx))
